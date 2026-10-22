@@ -1,7 +1,59 @@
 ﻿@page "/"
+@attribute [Authorize]
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Inicio - Sistema de Ventas</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="container py-4">
+    <div class="p-4 mb-4 bg-light rounded-3 shadow-sm border">
+        <div class="container-fluid py-2">
+            <h1 class="display-5 fw-bold text-primary">
+                <i class="bi bi-shop me-2"></i>Bienvenido al Sistema de Ventas
+            </h1>
+            <p class="col-md-10 fs-5 text-muted">
+                Gestión integral de inventarios, compras, clientes y facturación en tiempo real.
+            </p>
+        </div>
+    </div>
 
-Welcome to your new app.
+    <div class="row g-4">
+        <!-- Tarjeta Nueva Venta -->
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0 bg-success text-white">
+                <div class="card-body text-center p-4">
+                    <i class="bi bi-cart-plus-fill display-3 mb-3"></i>
+                    <h4 class="card-title fw-bold">Nueva Venta</h4>
+                    <p class="card-text">Realiza cobros, emite facturas impresas y actualiza el stock automáticamente.</p>
+                    <a href="ventas" class="btn btn-light fw-bold text-success mt-2">Ir a Ventas</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta Productos -->
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0 bg-primary text-white">
+                <div class="card-body text-center p-4">
+                    <i class="bi bi-box-seam-fill display-3 mb-3"></i>
+                    <h4 class="card-title fw-bold">Catálogo Productos</h4>
+                    <p class="card-text">Consulta las existencias de mercancía, precios de venta y categorías.</p>
+                    <a href="productos" class="btn btn-light fw-bold text-primary mt-2">Ver Productos</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta Compras (Solo Admin) -->
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm border-0 bg-dark text-white">
+                        <div class="card-body text-center p-4">
+                            <i class="bi bi-bag-check-fill display-3 mb-3 text-warning"></i>
+                            <h4 class="card-title fw-bold text-warning">Nueva Compra</h4>
+                            <p class="card-text">Registra la entrada de productos de proveedores para reabastecer el inventario.</p>
+                            <a href="compras" class="btn btn-warning fw-bold text-dark mt-2">Ir a Compras</a>
+                        </div>
+                    </div>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+    </div>
+</div>

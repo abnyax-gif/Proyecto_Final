@@ -1,2 +1,5 @@
 <Solution>
+  <Project Path="SistemaVentas.API/SistemaVentas.API.csproj" />
+  <Project Path="SistemaVentas.Blazor/SistemaVentas.Blazor.csproj" />
+  <Project Path="SistemaVentas.Models/SistemaVentas.Models.csproj" />
 </Solution>

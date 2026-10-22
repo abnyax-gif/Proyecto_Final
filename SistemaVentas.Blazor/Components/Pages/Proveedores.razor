@@ -1,0 +1,130 @@
+@page "/proveedores"
+@attribute [Authorize]
+@inject HttpClient Http
+
+<PageTitle>Proveedores - Sistema de Ventas</PageTitle>
+
+<div class="container py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-bold text-primary"><i class="bi bi-truck me-2"></i>Gestión de Proveedores</h2>
+    </div>
+
+    <div class="card shadow-sm p-3 mb-4 border-0">
+        <h5 class="fw-bold">@(proveedorActual.IdProveedor == 0 ? "Nuevo Proveedor" : "Editar Proveedor")</h5>
+        <EditForm Model="@proveedorActual" OnValidSubmit="@GuardarProveedor">
+            <DataAnnotationsValidator />
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Empresa / Nombre</label>
+                    <InputText @bind-Value="proveedorActual.NombreProveedor" class="form-control" placeholder="Ej. Distribuidora S.A." required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">NIT</label>
+                    <InputText @bind-Value="proveedorActual.Nit" class="form-control" placeholder="Ej. 888777-1" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Teléfono</label>
+                    <InputText @bind-Value="proveedorActual.Telefono" class="form-control" placeholder="Ej. 22221111" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Dirección</label>
+                    <InputText @bind-Value="proveedorActual.Direccion" class="form-control" placeholder="Ej. Zona 10, Ciudad" />
+                </div>
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-success me-2 fw-bold"><i class="bi bi-save me-1"></i>Guardar</button>
+                    <button type="button" class="btn btn-secondary fw-bold" @onclick="Limpiar">Cancelar</button>
+                </div>
+            </div>
+        </EditForm>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Proveedor</th>
+                        <th>NIT</th>
+                        <th>Teléfono</th>
+                        <th>Dirección</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (proveedores == null)
+                    {
+                        <tr><td colspan="6" class="text-center py-3">Cargando proveedores...</td></tr>
+                    }
+                    else if (!proveedores.Any())
+                    {
+                        <tr><td colspan="6" class="text-center py-3 text-muted">No hay proveedores registrados.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var p in proveedores)
+                        {
+                            <tr>
+                                <td>@p.IdProveedor</td>
+                                <td>@p.NombreProveedor</td>
+                                <td>@p.Nit</td>
+                                <td>@p.Telefono</td>
+                                <td>@p.Direccion</td>
+                                <td class="text-center">
+                                    <button class="btn btn-warning btn-sm me-1" @onclick="() => Editar(p)"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => Eliminar(p.IdProveedor)"><i class="bi bi-trash"></i></button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<ProveedorDTO>? proveedores;
+    private ProveedorDTO proveedorActual = new();
+
+    protected override async Task OnInitializedAsync() => await CargarProveedores();
+
+    private async Task CargarProveedores()
+    {
+        try { proveedores = await Http.GetFromJsonAsync<List<ProveedorDTO>>("api/Proveedores"); } catch { proveedores = new(); }
+    }
+
+    private async Task GuardarProveedor()
+    {
+        if (proveedorActual.IdProveedor == 0)
+            await Http.PostAsJsonAsync("api/Proveedores", proveedorActual);
+        else
+            await Http.PutAsJsonAsync($"api/Proveedores/{proveedorActual.IdProveedor}", proveedorActual);
+
+        Limpiar();
+        await CargarProveedores();
+    }
+
+    private void Editar(ProveedorDTO p) => proveedorActual = new ProveedorDTO
+    {
+        IdProveedor = p.IdProveedor, NombreProveedor = p.NombreProveedor,
+        Nit = p.Nit, Telefono = p.Telefono, Direccion = p.Direccion
+    };
+
+    private async Task Eliminar(int id)
+    {
+        await Http.DeleteAsync($"api/Proveedores/{id}");
+        await CargarProveedores();
+    }
+
+    private void Limpiar() => proveedorActual = new();
+
+    public class ProveedorDTO
+    {
+        public int IdProveedor { get; set; }
+        public string NombreProveedor { get; set; } = string.Empty;
+        public string? Nit { get; set; }
+        public string? Telefono { get; set; }
+        public string? Direccion { get; set; }
+    }
+}

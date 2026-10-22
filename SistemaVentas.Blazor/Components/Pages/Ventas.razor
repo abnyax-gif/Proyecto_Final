@@ -1,0 +1,307 @@
+@page "/ventas"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageTitle>Ventas - Sistema de Ventas</PageTitle>
+
+<div class="container py-3">
+    <h2 class="fw-bold text-success mb-3"><i class="bi bi-cart-check me-2"></i>Módulo de Nueva Venta</h2>
+
+    @if (!string.IsNullOrEmpty(mensajeError))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@mensajeError
+            <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+        </div>
+    }
+
+    <div class="row g-3 mb-4">
+        <!-- Datos de la Venta -->
+        <div class="col-md-6">
+            <div class="card shadow-sm p-3 border-0">
+                <h5 class="fw-bold mb-3">Datos del Cliente / Vendedor</h5>
+                <div class="mb-2">
+                    <label class="form-label fw-bold">Cliente</label>
+                    <select class="form-select" @bind="idClienteSeleccionado">
+                        <option value="0">-- Seleccione Cliente --</option>
+                        @if (clientes != null)
+                        {
+                            @foreach (var c in clientes)
+                            {
+                                <option value="@c.IdCliente">@c.Nombre @c.Apellido (NIT: @(string.IsNullOrEmpty(c.Nit) ? "C/F" : c.Nit))</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label fw-bold">Atendido Por (Empleado)</label>
+                    <select class="form-select" @bind="idEmpleadoSeleccionado">
+                        <option value="0">-- Seleccione Empleado --</option>
+                        @if (empleados != null)
+                        {
+                            @foreach (var e in empleados)
+                            {
+                                <option value="@e.IdEmpleado">@e.Nombre @e.Apellido</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agregar Producto -->
+        <div class="col-md-6">
+            <div class="card shadow-sm p-3 border-0">
+                <h5 class="fw-bold mb-3">Agregar Producto a la Venta</h5>
+                <div class="mb-2">
+                    <label class="form-label fw-bold">Producto</label>
+                    <select class="form-select" @bind="idProductoSeleccionado" @bind:after="OnProductoCambiado">
+                        <option value="0">-- Seleccione Producto --</option>
+                        @if (productos != null)
+                        {
+                            @foreach (var p in productos)
+                            {
+                                <option value="@p.IdProducto">@p.Descripcion (Stock: @p.Existencia | Q @p.PrecioVenta.ToString("N2"))</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-4">
+                        <label class="form-label fw-bold">Cantidad</label>
+                        <input type="number" min="1" class="form-control" @bind="cantidadAgregar" />
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label fw-bold">Precio Venta</label>
+                        <input type="number" step="0.01" class="form-control" @bind="precioVentaAgregar" />
+                    </div>
+                    <div class="col-4 align-self-end">
+                        <button class="btn btn-success w-100 fw-bold" @onclick="AgregarProducto"><i class="bi bi-plus-lg me-1"></i>Agregar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalle de Venta -->
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-dark text-white fw-bold">Detalle de la Venta</div>
+        <div class="card-body p-0">
+            <table class="table table-striped align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Precio Venta</th>
+                        <th>Cantidad</th>
+                        <th>Subtotal</th>
+                        <th class="text-center">Quitar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!detalles.Any())
+                    {
+                        <tr><td colspan="5" class="text-center py-3 text-muted">No se han agregado productos a la venta.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var d in detalles)
+                        {
+                            <tr>
+                                <td>@d.DescripcionProducto</td>
+                                <td>Q @d.PrecioVenta.ToString("N2")</td>
+                                <td>@d.Cantidad</td>
+                                <td><strong>Q @((d.Cantidad * d.PrecioVenta).ToString("N2"))</strong></td>
+                                <td class="text-center">
+                                    <button class="btn btn-outline-danger btn-sm" @onclick="() => detalles.Remove(d)"><i class="bi bi-x-lg"></i></button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+            <h4 class="fw-bold m-0 text-success">Total: Q @detalles.Sum(x => x.Cantidad * x.PrecioVenta).ToString("N2")</h4>
+            <button class="btn btn-primary btn-lg fw-bold" @onclick="FinalizarVenta" disabled="@(!detalles.Any())">
+                <i class="bi bi-check-circle me-1"></i> Confirmar Venta
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Factura / Comprobante de Venta -->
+@if (ventaRealizada != null)
+{
+    <div class="modal fade show d-block bg-dark bg-opacity-50" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content p-4" id="facturaImp">
+                <div class="text-center border-bottom pb-2 mb-3">
+                    <h4 class="fw-bold">SISTEMA DE VENTAS S.A.</h4>
+                    <p class="mb-0 text-muted">Factura de Venta No. #@ventaRealizada.IdVenta</p>
+                    <small>Fecha: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</small>
+                </div>
+
+                <div class="mb-3">
+                    <p class="mb-1"><strong>Cliente:</strong> @ventaRealizada.NombreCliente</p>
+                    <p class="mb-1"><strong>NIT:</strong> @ventaRealizada.NitCliente</p>
+                    <p class="mb-1"><strong>Atendido por:</strong> @ventaRealizada.NombreEmpleado</p>
+                </div>
+
+                <table class="table table-sm border-top">
+                    <thead>
+                        <tr>
+                            <th>Cant.</th>
+                            <th>Producto</th>
+                            <th class="text-end">Precio Unid.</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in ventaRealizada.Detalles)
+                        {
+                            <tr>
+                                <td>@item.Cantidad</td>
+                                <td>@item.DescripcionProducto</td>
+                                <td class="text-end">Q @item.PrecioVenta.ToString("N2")</td>
+                                <td class="text-end">Q @((item.Cantidad * item.PrecioVenta).ToString("N2"))</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <div class="text-end border-top pt-2 fw-bold h5">
+                    Total Pagado: Q @ventaRealizada.Total.ToString("N2")
+                </div>
+
+                <div class="d-flex justify-content-between mt-4 d-print-none">
+                    <button class="btn btn-secondary fw-bold" @onclick="() => ventaRealizada = null">Cerrar</button>
+                    <button class="btn btn-primary fw-bold" @onclick="ImprimirFactura"><i class="bi bi-printer me-1"></i> Imprimir Factura</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ClienteDTO>? clientes;
+    private List<EmpleadoDTO>? empleados;
+    private List<ProductoDTO>? productos;
+
+    private int idClienteSeleccionado = 0;
+    private int idEmpleadoSeleccionado = 0;
+    private int idProductoSeleccionado = 0;
+    private int cantidadAgregar = 1;
+    private decimal precioVentaAgregar = 0;
+    private string? mensajeError;
+
+    private List<DetalleItem> detalles = new();
+    private VentaResumenDTO? ventaRealizada;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { clientes = await Http.GetFromJsonAsync<List<ClienteDTO>>("api/Clientes"); } catch { }
+        try { empleados = await Http.GetFromJsonAsync<List<EmpleadoDTO>>("api/Empleados"); } catch { }
+        try { productos = await Http.GetFromJsonAsync<List<ProductoDTO>>("api/Productos"); } catch { }
+    }
+
+    private void OnProductoCambiado()
+    {
+        var prod = productos?.FirstOrDefault(p => p.IdProducto == idProductoSeleccionado);
+        if (prod != null)
+        {
+            precioVentaAgregar = prod.PrecioVenta;
+        }
+    }
+
+    private void AgregarProducto()
+    {
+        mensajeError = null;
+        var prod = productos?.FirstOrDefault(p => p.IdProducto == idProductoSeleccionado);
+        
+        if (prod == null || cantidadAgregar <= 0) return;
+
+        // Validar existencias en inventario
+        int yaAgregados = detalles.Where(d => d.IdProducto == prod.IdProducto).Sum(d => d.Cantidad);
+        if ((yaAgregados + cantidadAgregar) > prod.Existencia)
+        {
+            mensajeError = $"Stock insuficiente para '{prod.Descripcion}'. Disponible: {prod.Existencia}.";
+            return;
+        }
+
+        detalles.Add(new DetalleItem
+        {
+            IdProducto = prod.IdProducto,
+            DescripcionProducto = prod.Descripcion,
+            PrecioVenta = precioVentaAgregar > 0 ? precioVentaAgregar : prod.PrecioVenta,
+            Cantidad = cantidadAgregar
+        });
+    }
+
+    private async Task FinalizarVenta()
+    {
+        if (idClienteSeleccionado == 0 || idEmpleadoSeleccionado == 0 || !detalles.Any()) return;
+
+        var cli = clientes?.FirstOrDefault(c => c.IdCliente == idClienteSeleccionado);
+        var emp = empleados?.FirstOrDefault(e => e.IdEmpleado == idEmpleadoSeleccionado);
+
+        var dto = new
+        {
+            IdCliente = idClienteSeleccionado,
+            IdEmpleado = idEmpleadoSeleccionado,
+            Total = detalles.Sum(x => x.Cantidad * x.PrecioVenta),
+            Detalles = detalles.Select(d => new { d.IdProducto, d.Cantidad, d.PrecioVenta }).ToList()
+        };
+
+        var response = await Http.PostAsJsonAsync("api/Ventas", dto);
+        if (response.IsSuccessStatusCode)
+        {
+            var resObj = await response.Content.ReadFromJsonAsync<RespuestaVentaDTO>();
+
+            ventaRealizada = new VentaResumenDTO
+            {
+                IdVenta = resObj?.IdVenta ?? Random.Shared.Next(100, 999),
+                NombreCliente = cli != null ? $"{cli.Nombre} {cli.Apellido}" : "Cliente General",
+                NitCliente = cli != null && !string.IsNullOrEmpty(cli.Nit) ? cli.Nit : "C/F",
+                NombreEmpleado = emp != null ? $"{emp.Nombre} {emp.Apellido}" : "Empleado",
+                Total = dto.Total,
+                Detalles = new List<DetalleItem>(detalles)
+            };
+
+            detalles.Clear();
+            idClienteSeleccionado = 0;
+            idEmpleadoSeleccionado = 0;
+            idProductoSeleccionado = 0;
+            productos = await Http.GetFromJsonAsync<List<ProductoDTO>>("api/Productos");
+        }
+        else
+        {
+            mensajeError = "No se pudo procesar la venta. Verifique la conexión con el servidor.";
+        }
+    }
+
+    private async Task ImprimirFactura() => await JS.InvokeVoidAsync("window.print");
+
+    public class DetalleItem
+    {
+        public int IdProducto { get; set; }
+        public string DescripcionProducto { get; set; } = string.Empty;
+        public decimal PrecioVenta { get; set; }
+        public int Cantidad { get; set; }
+    }
+
+    public class VentaResumenDTO
+    {
+        public int IdVenta { get; set; }
+        public string NombreCliente { get; set; } = "";
+        public string NitCliente { get; set; } = "";
+        public string NombreEmpleado { get; set; } = "";
+        public decimal Total { get; set; }
+        public List<DetalleItem> Detalles { get; set; } = new();
+    }
+
+    public class RespuestaVentaDTO { public int IdVenta { get; set; } }
+    public class ClienteDTO { public int IdCliente { get; set; } public string Nombre { get; set; } = string.Empty; public string Apellido { get; set; } = string.Empty; public string? Nit { get; set; } }
+    public class EmpleadoDTO { public int IdEmpleado { get; set; } public string Nombre { get; set; } = string.Empty; public string Apellido { get; set; } = string.Empty; }
+    public class ProductoDTO { public int IdProducto { get; set; } public string Descripcion { get; set; } = string.Empty; public decimal PrecioVenta { get; set; } public int Existencia { get; set; } }
+}

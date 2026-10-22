@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SistemaVentas.Models;
 
-[Table("Compras_Detalle")]
+[Table("compras_detalle")]
 public class CompraDetalle
 {
     [Key]
@@ -13,21 +13,12 @@ public class CompraDetalle
     [Column("id_compra")]
     public int IdCompra { get; set; }
 
-    [ForeignKey(nameof(IdCompra))]
-    public Compra? Compra { get; set; }
-
-    [Required]
     [Column("id_producto")]
     public int IdProducto { get; set; }
 
-    [ForeignKey(nameof(IdProducto))]
-    public Producto? Producto { get; set; }
-
-    [Required(ErrorMessage = "La cantidad es obligatoria.")]
     [Column("cantidad")]
     public int Cantidad { get; set; }
 
-    [Required(ErrorMessage = "El precio de costo es obligatorio.")]
-    [Column("precio_costo_unitario", TypeName = "decimal(10,2)")]
-    public decimal PrecioCostoUnitario { get; set; }
+    [Column("precio_costo")]
+    public decimal PrecioCosto { get; set; }
 }

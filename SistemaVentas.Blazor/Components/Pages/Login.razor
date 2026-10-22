@@ -1,0 +1,102 @@
+@page "/login"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Iniciar Sesión - Sistema de Ventas</PageTitle>
+
+<div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="card shadow-lg p-4 border-0 rounded-4" style="max-width: 420px; width: 100%;">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold text-primary">Sistema de Ventas</h2>
+            <p class="text-muted mb-0">Ingrese sus credenciales</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(mensajeError))
+        {
+            <div class="alert alert-danger text-center p-2 small">@mensajeError</div>
+        }
+
+        <EditForm Model="loginModel" OnValidSubmit="ProcesarLogin">
+            <DataAnnotationsValidator />
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Usuario</label>
+                <InputText class="form-control form-control-lg" @bind-Value="loginModel.Usuario" placeholder="Ej. admin" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Contraseña</label>
+                <InputText type="password" class="form-control form-control-lg" @bind-Value="loginModel.Clave" placeholder="••••••••" />
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold mt-2" disabled="@cargando">
+                @if (cargando)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                }
+                Iniciar Sesión
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private LoginDTO loginModel = new();
+    private string? mensajeError;
+    private bool cargando = false;
+
+    private async Task ProcesarLogin()
+    {
+        cargando = true;
+        mensajeError = null;
+
+        // Comprobación directa de credenciales locales
+        if (loginModel.Usuario.ToLower().Trim() == "admin" && loginModel.Clave == "admin123")
+        {
+            var customAuth = (CustomAuthStateProvider)AuthStateProvider;
+            await customAuth.MarcarComoAutenticado("admin", "Admin");
+            Navigation.NavigateTo("");
+            cargando = false;
+            return;
+        }
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/Auth/login", loginModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<LoginResponseDTO>();
+                var customAuth = (CustomAuthStateProvider)AuthStateProvider;
+                await customAuth.MarcarComoAutenticado(result?.Usuario ?? loginModel.Usuario, result?.Rol ?? "Admin");
+                Navigation.NavigateTo("");
+            }
+            else
+            {
+                mensajeError = "Usuario o contraseña incorrectos.";
+            }
+        }
+        catch
+        {
+            mensajeError = "No se pudo conectar con el servidor de autenticación.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    public class LoginDTO
+    {
+        public string Usuario { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
+    }
+
+    public class LoginResponseDTO
+    {
+        public string Token { get; set; } = "";
+        public string Usuario { get; set; } = "";
+        public string Rol { get; set; } = "";
+    }
+}

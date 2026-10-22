@@ -1,10 +1,11 @@
+C:\Users\82XV0088GJ\Desktop\Proyecto P2\SistemaVentas.Models\bin\Debug\net10.0\SistemaVentas.Models.deps.json
+C:\Users\82XV0088GJ\Desktop\Proyecto P2\SistemaVentas.Models\bin\Debug\net10.0\SistemaVentas.Models.dll
+C:\Users\82XV0088GJ\Desktop\Proyecto P2\SistemaVentas.Models\bin\Debug\net10.0\SistemaVentas.Models.pdb
 C:\Users\82XV0088GJ\Desktop\Proyecto P2\SistemaVentas.Models\obj\Debug\net10.0\SistemaVentas.Models.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\82XV0088GJ\Desktop\Proyecto P2\SistemaVentas.Models\obj\Debug\net10.0\SistemaVentas.Models.AssemblyInfoInputs.cache
 C:\Users\82XV0088GJ\Desktop\Proyecto P2\SistemaVentas.Models\obj\Debug\net10.0\SistemaVentas.Models.AssemblyInfo.cs
 C:\Users\82XV0088GJ\Desktop\Proyecto P2\SistemaVentas.Models\obj\Debug\net10.0\SistemaVentas.Models.csproj.CoreCompileInputs.cache
-C:\Users\82XV0088GJ\Desktop\Proyecto P2\SistemaVentas.Models\bin\Debug\net10.0\SistemaVentas.Models.deps.json
-C:\Users\82XV0088GJ\Desktop\Proyecto P2\SistemaVentas.Models\bin\Debug\net10.0\SistemaVentas.Models.dll
-C:\Users\82XV0088GJ\Desktop\Proyecto P2\SistemaVentas.Models\bin\Debug\net10.0\SistemaVentas.Models.pdb
+C:\Users\82XV0088GJ\Desktop\Proyecto P2\SistemaVentas.Models\obj\Debug\net10.0\SistemaVentas.Models.sourcelink.json
 C:\Users\82XV0088GJ\Desktop\Proyecto P2\SistemaVentas.Models\obj\Debug\net10.0\SistemaVentas.Models.dll
 C:\Users\82XV0088GJ\Desktop\Proyecto P2\SistemaVentas.Models\obj\Debug\net10.0\refint\SistemaVentas.Models.dll
 C:\Users\82XV0088GJ\Desktop\Proyecto P2\SistemaVentas.Models\obj\Debug\net10.0\SistemaVentas.Models.pdb

@@ -1,0 +1,181 @@
+@page "/productos"
+@attribute [Authorize]
+@inject HttpClient Http
+
+<PageTitle>Productos - Sistema de Ventas</PageTitle>
+
+<div class="container py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-bold text-primary"><i class="bi bi-box-seam me-2"></i>Catálogo de Productos</h2>
+        <div>
+            <a href="/marcas" class="btn btn-outline-primary me-2 fw-bold"><i class="bi bi-tags me-1"></i>Marcas</a>
+            <a href="/proveedores" class="btn btn-outline-secondary fw-bold"><i class="bi bi-truck me-1"></i>Proveedores</a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm p-3 mb-4 border-0">
+        <h5 class="fw-bold">@(productoActual.IdProducto == 0 ? "Nuevo Producto" : "Editar Producto")</h5>
+        <EditForm Model="@productoActual" OnValidSubmit="@GuardarProducto">
+            <DataAnnotationsValidator />
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Descripción del Producto</label>
+                    <InputText @bind-Value="productoActual.Descripcion" class="form-control" placeholder="Ej. Laptop HP 15 Core i5" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Marca</label>
+                    <InputSelect @bind-Value="productoActual.IdMarca" class="form-select" required>
+                        <option value="0">-- Seleccione Marca --</option>
+                        @if (marcas != null)
+                        {
+                            @foreach (var m in marcas)
+                            {
+                                <option value="@m.IdMarca">@m.NombreMarca</option>
+                            }
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Precio Costo (Q)</label>
+                    <InputNumber @bind-Value="productoActual.PrecioCosto" class="form-control" step="0.01" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Precio Venta (Q)</label>
+                    <InputNumber @bind-Value="productoActual.PrecioVenta" class="form-control" step="0.01" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Existencia Inicial</label>
+                    <InputNumber @bind-Value="productoActual.Existencia" class="form-control" />
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-bold">URL / Ruta de la Imagen</label>
+                    <InputText @bind-Value="productoActual.ImagenUrl" class="form-control" placeholder="Ej. /images/productos/laptop.jpg" />
+                </div>
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-success me-2 fw-bold"><i class="bi bi-save me-1"></i>Guardar</button>
+                    <button type="button" class="btn btn-secondary fw-bold" @onclick="Limpiar">Cancelar</button>
+                </div>
+            </div>
+        </EditForm>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Imagen</th>
+                        <th>Producto</th>
+                        <th>Marca</th>
+                        <th>P. Costo</th>
+                        <th>P. Venta</th>
+                        <th>Stock</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (productos == null)
+                    {
+                        <tr><td colspan="7" class="text-center py-3">Cargando productos...</td></tr>
+                    }
+                    else if (!productos.Any())
+                    {
+                        <tr><td colspan="7" class="text-center py-3 text-muted">No hay productos registrados.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var p in productos)
+                        {
+                            <tr>
+                                <td>
+                                    <img src="@(string.IsNullOrEmpty(p.ImagenUrl) ? "https://via.placeholder.com/50" : p.ImagenUrl)" 
+                                         alt="Imagen" class="rounded border" style="width: 50px; height: 50px; object-fit: cover;" />
+                                </td>
+                                <td>@p.Descripcion</td>
+                                <td><span class="badge bg-secondary">@p.NombreMarca</span></td>
+                                <td>Q @p.PrecioCosto.ToString("N2")</td>
+                                <td><strong class="text-success">Q @p.PrecioVenta.ToString("N2")</strong></td>
+                                <td>
+                                    <span class="badge @(p.Existencia > 5 ? "bg-success" : "bg-danger")">
+                                        @p.Existencia
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-warning btn-sm me-1" @onclick="() => Editar(p)"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => Eliminar(p.IdProducto)"><i class="bi bi-trash"></i></button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<ProductoDTO>? productos;
+    private List<MarcaDTO>? marcas;
+    private ProductoDTO productoActual = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarMarcas();
+        await CargarProductos();
+    }
+
+    private async Task CargarMarcas()
+    {
+        try { marcas = await Http.GetFromJsonAsync<List<MarcaDTO>>("api/Marcas"); } catch { marcas = new(); }
+    }
+
+    private async Task CargarProductos()
+    {
+        try { productos = await Http.GetFromJsonAsync<List<ProductoDTO>>("api/Productos"); } catch { productos = new(); }
+    }
+
+    private async Task GuardarProducto()
+    {
+        if (productoActual.IdMarca == 0) return;
+
+        if (productoActual.IdProducto == 0)
+            await Http.PostAsJsonAsync("api/Productos", productoActual);
+        else
+            await Http.PutAsJsonAsync($"api/Productos/{productoActual.IdProducto}", productoActual);
+
+        Limpiar();
+        await CargarProductos();
+    }
+
+    private void Editar(ProductoDTO p) => productoActual = new ProductoDTO
+    {
+        IdProducto = p.IdProducto, Descripcion = p.Descripcion, IdMarca = p.IdMarca,
+        PrecioCosto = p.PrecioCosto, PrecioVenta = p.PrecioVenta, Existencia = p.Existencia, ImagenUrl = p.ImagenUrl
+    };
+
+    private async Task Eliminar(int id)
+    {
+        await Http.DeleteAsync($"api/Productos/{id}");
+        await CargarProductos();
+    }
+
+    private void Limpiar() => productoActual = new();
+
+    public class ProductoDTO
+    {
+        public int IdProducto { get; set; }
+        public string Descripcion { get; set; } = string.Empty;
+        public int IdMarca { get; set; }
+        public string NombreMarca { get; set; } = string.Empty;
+        public decimal PrecioCosto { get; set; }
+        public decimal PrecioVenta { get; set; }
+        public int Existencia { get; set; }
+        public string? ImagenUrl { get; set; }
+    }
+
+    public class MarcaDTO
+    {
+        public int IdMarca { get; set; }
+        public string NombreMarca { get; set; } = string.Empty;
+    }
+}
